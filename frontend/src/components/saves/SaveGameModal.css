@@ -1,0 +1,334 @@
+.save-modal {
+    max-width: 500px;
+}
+
+.save-form {
+    padding: 0 24px 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.checkbox-group {
+    margin-bottom: 24px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+    margin-bottom: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 12px;
+    transform: scale(1.2);
+}
+
+.game-state-preview {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.game-state-preview h3 {
+    margin: 0 0 12px 0;
+    color: #5A7D9A;
+    font-size: 16px;
+}
+
+.progress-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.progress-item:last-child {
+    margin-bottom: 0;
+}
+
+.progress-label {
+    color: #666;
+}
+
+.progress-value {
+    font-weight: 500;
+    color: #333;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.cancel-btn {
+    background: none;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #6c757d;
+    color: white;
+}
+
+.save-btn {
+    background: #4ECDC4;
+    border: 2px solid #4ECDC4;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.save-btn:hover:not(:disabled) {
+    background: #44B5AC;
+    border-color: #44B5AC;
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Load Game Modal Styles */
+.load-modal {
+    max-width: 600px;
+    max-height: 80vh;
+}
+
+.load-content {
+    padding: 0 24px 24px;
+}
+
+.loading-saves {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.loading-saves .spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+}
+
+.no-saves {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.saves-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.save-item {
+    padding: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.save-item:last-child {
+    border-bottom: none;
+}
+
+.save-item:hover {
+    background: #f8f9fa;
+}
+
+.save-item.selected {
+    background: #e3f2fd;
+    border-color: #4ECDC4;
+}
+
+.save-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.save-name {
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.auto-badge {
+    background: #ff9800;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.delete-save-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 4px;
+}
+
+.delete-save-btn:hover {
+    opacity: 1;
+}
+
+.save-story {
+    color: #666;
+    font-size: 14px;
+    margin: 4px 0;
+    font-weight: 500;
+}
+
+.save-progress {
+    color: #4ECDC4;
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+.save-date {
+    color: #999;
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+.save-preview {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+    margin: 8px 0 0;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.load-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Enhanced Story Game Styles */
+.game-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.save-game-btn, .load-game-btn {
+    background: #4ECDC4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.save-game-btn:hover, .load-game-btn:hover {
+    background: #44B5AC;
+}
+
+.save-game-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auto-save-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+}
+
+.auto-save-toggle input[type="checkbox"] {
+    transform: scale(1.1);
+}
+
+.game-progress {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: #666;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+}
+
+.final-stats {
+    background: #f0f7ff;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    text-align: left;
+}
+
+.final-stats p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .game-controls {
+        gap: 8px;
+    }
+    
+    .game-progress {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .load-modal {
+        max-width: 95%;
+    }
+    
+    .saves-list {
+        max-height: 300px;
+    }
+}

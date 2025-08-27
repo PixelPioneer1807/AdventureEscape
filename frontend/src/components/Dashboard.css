@@ -1,0 +1,29 @@
+.dashboard {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--box-shadow);
+}
+
+.metrics {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.metric {
+  flex: 1 1 180px;
+  text-align: center;
+}
+
+.metric h3 {
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+.metric p {
+  color: #666;
+}

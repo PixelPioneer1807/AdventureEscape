@@ -1,0 +1,69 @@
+.app-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn.nav-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn.nav-btn:hover {
+  color: #4a90e2;
+}
+
+.btn.primary {
+  background: #4a90e2;
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.btn.primary:hover {
+  background: #357abd;
+}
+
+.btn.logout-btn {
+  background: #e53e3e;
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.btn.logout-btn:hover {
+  background: #c53030;
+}
+
+.welcome-text {
+  font-size: 0.9rem;
+  color: #4a5568;
+}
