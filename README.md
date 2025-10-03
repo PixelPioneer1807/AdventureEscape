@@ -6,7 +6,7 @@ AdventureEscape is an AI-powered adventure game platform that leverages generati
 
 ## How It Works
 
-### AGenerative AI (Gaming)
+### Generative AI (Gaming)
 
 - **Dynamic Story Generation**: The backend employs a Python/LangChain pipeline that interacts with an external LLM (Euriai) to generate interactive, branching adventure stories based on user-selected themes.
 - **Visual Asset Creation**: For each narrative node, the system generates two unique visual assets by calling an AI image API. These images are fetched, stored, and served to the frontend, providing visual context for every part of the story.
