@@ -10,6 +10,8 @@ class StoryOptionsSchema(BaseModel):
 
 class StoryNodeBase(BaseModel):
     content: str
+    image_prompt_1: Optional[str] = None
+    image_prompt_2: Optional[str] = None
     is_ending: bool = False
     is_winning_ending: bool = False
 

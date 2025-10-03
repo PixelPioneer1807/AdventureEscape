@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     EURI_BASE_URL: Optional[str] = None
     EURI_MODEL: str = "euriai-chat-mini"
     
+    # --- IMAGE GENERATION MODEL (Updated) ---
+    EURI_IMAGE_MODEL: str = "black-forest-labs/FLUX.1-schnell"
+    # ----------------------------------------
+    
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"

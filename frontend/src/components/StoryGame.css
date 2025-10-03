@@ -1,10 +1,10 @@
 .story-game {
-  max-width: 800px;
-  margin: 0 auto;
-  background: var(--background-white);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+    /* Ensures the header and footer are within the flow */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .story-game h2 {
@@ -15,7 +15,84 @@
   font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
+  width: 100%; /* Make the title span full width */
+  max-width: 1200px; /* Match the game-layout width */
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
 }
+
+/* --- NEW LAYOUT STYLES --- */
+.game-layout {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Space between images and content */
+    width: 100%;
+    max-width: 1200px;
+    align-items: flex-start; 
+    padding: 20px 0; /* Add vertical padding */
+}
+
+.story-center-content {
+    flex-grow: 1;
+    max-width: 600px; /* Max width for the central text column */
+    min-width: 400px;
+    background: var(--background-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    /* Remove original max-width and margin from .story-game here */
+}
+
+.image-box {
+    width: 300px; /* Fixed width for the image container */
+    height: 300px; /* Fixed height for the image container */
+    border: 2px solid var(--border-medium);
+    border-radius: 8px;
+    overflow: hidden;
+    position: sticky; /* Keep images visible as user scrolls */
+    top: 20px;
+    box-shadow: var(--shadow-sm);
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* Needed for absolute positioning of prompt text */
+}
+
+.image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures the placeholder image covers the area */
+    display: block;
+}
+
+.image-prompt-text {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px;
+    text-align: center;
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.image-box:hover .image-prompt-text {
+    opacity: 1;
+}
+
+.image-placeholder {
+    color: var(--text-medium);
+    font-style: italic;
+    text-align: center;
+}
+/* --- END NEW LAYOUT STYLES --- */
+
+/* Original styles adjusted to fit the new .story-center-content wrapper */
 
 .controls {
   display: flex;
@@ -161,10 +238,27 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .story-game {
-    margin: 0 0.5rem;
-  }
+@media (max-width: 1000px) {
+    .game-layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .image-box {
+        width: 100%;
+        max-width: 500px;
+        height: 250px;
+        position: relative; /* Remove sticky on mobile */
+        top: 0;
+    }
+
+    .story-center-content {
+        min-width: unset;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 0.5rem;
+    }
   
   .controls {
     flex-direction: column;
@@ -185,4 +279,10 @@
     flex-direction: column;
     padding: 1.5rem;
   }
+}
+
+@media (max-width: 768px) {
+    .story-center-content {
+        margin: 0 0.5rem;
+    }
 }

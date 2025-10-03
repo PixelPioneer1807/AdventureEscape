@@ -2,12 +2,15 @@ import json
 import logging
 import re
 from typing import Any, Dict, Optional
-
+import requests 
+import hashlib 
+import os
+from PIL import Image
+from io import BytesIO
 
 from sqlalchemy.orm import Session
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-
 
 from core.prompts import STORY_PROMPT
 from models.story import Story, StoryNode
@@ -15,19 +18,117 @@ from core.models import StoryLLMResponse, StoryNodeLLM
 from core.euriai_client import EuriaiChat
 from core.config import settings
 
-
 logger = logging.getLogger("app.story")
 
-
+# Define the root directory for image storage (relative to backend dir)
+IMAGE_STORAGE_ROOT = "generated_images"
 
 class StoryGenerator:
 
+    # --- FIXED METHOD: Path Helper ---
+    @classmethod
+    def _get_image_save_path(cls, user_id: Optional[int], story_id: int, filename: str) -> str:
+        """Constructs the local file path for image storage."""
+        
+        # Use a placeholder ID if user_id is None (unauthenticated session)
+        user_folder = f"user_{user_id if user_id is not None else 'anonymous'}"
+        story_folder = f"story_{story_id}"
+        
+        # Path: generated_images/user_[id]/story_[id]/[filename]
+        save_dir = os.path.join(IMAGE_STORAGE_ROOT, user_folder, story_folder)
+        os.makedirs(save_dir, exist_ok=True)
+        
+        return os.path.join(save_dir, filename)
+
+    # --- CRITICAL FIX: Download and Save Image ---
+    @classmethod
+    def _download_and_save_image(cls, image_url: str, save_path: str) -> Optional[str]:
+        """Downloads the image from the given URL and saves it locally."""
+        try:
+            image_response = requests.get(image_url, timeout=30)
+            image_response.raise_for_status()
+
+            # Use PIL to open the image data from memory
+            image_file = Image.open(BytesIO(image_response.content))
+            image_file.save(save_path)
+            
+            logger.info("Successfully downloaded and saved image to: %s", save_path)
+            
+            # --- CRITICAL FIX: Correct public path construction ---
+            # CHANGED FROM: save_path.replace(IMAGE_STORAGE_ROOT, "/static/images")
+            # CHANGED TO: save_path.replace(IMAGE_STORAGE_ROOT, "/static")
+            public_path = save_path.replace(IMAGE_STORAGE_ROOT, "/static").replace("\\", "/")
+            logger.info("Public Image Path to save to DB: %s", public_path)
+            return public_path
+
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to download image from URL: %s", str(e))
+            return None
+        except Exception as e:
+            logger.error("Failed to save image locally: %s", str(e))
+            return None
+
+    # --- MODIFIED: Image Generation Logic ---
+    @classmethod
+    def _generate_image_url(cls, prompt: str, user_id: Optional[int], story_id: int, image_num: int) -> str:
+        """
+        Calls the dedicated Euriai Image API endpoint for generation, then downloads and saves it.
+        """
+        if not prompt:
+            return f"https://via.placeholder.com/400x300.png?text=No+Prompt"
+        
+        image_endpoint = f"{settings.EURI_BASE_URL.rstrip('/')}/api/v1/euri/images/generations"
+        
+        headers = {
+            "Authorization": f"Bearer {settings.EURI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "prompt": prompt,
+            "model": settings.EURI_IMAGE_MODEL, 
+            "n": 1,
+            "size": "400x300", 
+            "quality": "standard", 
+            "response_format": "url",
+            "style": "vivid"
+        }
+        
+        try:
+            response = requests.post(image_endpoint, headers=headers, json=payload, timeout=45)
+            response.raise_for_status() 
+            data = response.json()
+            image_url = data.get("data", [{}])[0].get("url")
+
+            if image_url and image_url.startswith("http"):
+                
+                filename = f"node_{story_id}_{image_num}_{hashlib.sha256(prompt.encode()).hexdigest()[:8]}.png"
+                save_path = cls._get_image_save_path(user_id, story_id, filename)
+                
+                # Download and save the image locally
+                public_path = cls._download_and_save_image(image_url, save_path)
+                
+                # Return the public path for the frontend
+                return public_path if public_path else f"https://via.placeholder.com/400x300.png?text=Failed+to+Save"
+
+            logger.error("Euriai Image API returned invalid/missing URL structure: %s", data)
+            prompt_bytes = prompt.encode('utf-8')
+            prompt_seed = hashlib.sha256(prompt_bytes).hexdigest()[:10]
+            return f"https://picsum.photos/seed/{prompt_seed}/400/300"
+
+        except requests.exceptions.RequestException as e:
+            logger.error("Euriai Image generation failed (Request/HTTP Error): %s", e)
+            logger.error("Response content: %s", getattr(e.response, 'text', 'N/A')[:100])
+            
+            prompt_bytes = prompt.encode('utf-8')
+            prompt_seed = hashlib.sha256(prompt_bytes).hexdigest()[:10]
+            return f"https://picsum.photos/seed/{prompt_seed}/400/300"
 
     @classmethod
     def _get_llm(cls):
         api_key = settings.EURI_API_KEY or settings.CHOREO_OPENAI_CONNECTION_OPENAI_API_KEY
         base_url = settings.EURI_BASE_URL or settings.CHOREO_OPENAI_CONNECTION_SERVICEURL
-        model = settings.EURI_MODEL or "gpt-4.1-nano"
+        model = settings.EURI_MODEL or "euriai-chat-mini"
         return EuriaiChat(
             model=model,
             api_key=api_key,
@@ -35,7 +136,6 @@ class StoryGenerator:
             temperature=0.2,
             max_tokens=1400,
         )
-
 
     @classmethod
     def generate_story(cls, db: Session, session_id: str, theme: str = "fantasy", user_id: Optional[int] = None) -> Story:
@@ -85,7 +185,9 @@ class StoryGenerator:
             if isinstance(root_node_data, dict):
                 root_node_data = StoryNodeLLM.model_validate(root_node_data)
 
-            cls._process_story_node(db, story_db.id, root_node_data, is_root=True)
+            # --- CRITICAL FIX: Pass user_id for folder creation and trigger image generation for ROOT only ---
+            cls._process_story_node(db, story_db.id, root_node_data, is_root=True, generate_images=True, user_id=user_id) 
+            # --- END FIX ---
             db.commit()
             logger.debug("Story generation completed successfully")
             return story_db
@@ -95,11 +197,7 @@ class StoryGenerator:
             db.rollback()
             raise
 
-
-
-
     # ---------- Helpers: parsing and normalization ----------
-
 
     @staticmethod
     def _strip_fences(s: str) -> str:
@@ -109,7 +207,6 @@ class StoryGenerator:
             s2 = s2[first_nl + 1 :] if first_nl != -1 else s2.lstrip("`")
             s2 = s2.rstrip("`").strip()
         return s2
-
 
     @classmethod
     def _to_object(cls, maybe_json_str_or_obj: Any) -> Dict[str, Any]:
@@ -143,7 +240,7 @@ class StoryGenerator:
         except json.JSONDecodeError as e:
             logger.debug("Initial JSON parse failed: %s", e)
             
-            # 🔧 FIX: Only apply regex cleanup to strings, not dicts
+            # FIX: Only apply regex cleanup to strings, not dicts
             if isinstance(s, str):
                 logger.debug("Attempting JSON cleanup and retry")
                 # Remove comments and trailing commas then retry
@@ -181,7 +278,6 @@ class StoryGenerator:
 
         return obj
 
-
     @classmethod
     def _normalize_top(cls, obj: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -189,7 +285,7 @@ class StoryGenerator:
         """
         # If wrapped or missing keys, try to pull inner object
         if "title" not in obj or "rootNode" not in obj:
-            # 🔧 FIX: Handle Euriai data wrapper first
+            # FIX: Handle Euriai data wrapper first
             if "data" in obj and isinstance(obj["data"], dict):
                 obj = obj["data"]
                 logger.debug("Extracted from Euriai 'data' wrapper")
@@ -197,7 +293,7 @@ class StoryGenerator:
             # If envelope leaked in somehow, try to drill down
             if "choices" in obj and isinstance(obj["choices"], list):
                 try:
-                    # 🔧 FIX: Access choices as LIST, not dict
+                    # FIX: Access choices as LIST, not dict
                     first_choice = obj["choices"][0] if obj["choices"] else {}
                     msg = first_choice.get("message", {})
                     inner = msg.get("content", "")
@@ -207,7 +303,6 @@ class StoryGenerator:
                 except Exception as e:
                     logger.warning("Failed to extract from choices: %s", e)
 
-
         # If rootNode is a stringified JSON, decode it
         if isinstance(obj.get("rootNode"), str):
             try:
@@ -215,14 +310,11 @@ class StoryGenerator:
             except Exception:
                 pass
 
-
         # Normalize root node
         if isinstance(obj.get("rootNode"), dict):
             obj["rootNode"] = cls._normalize_node(obj["rootNode"])
 
-
         return obj
-
 
     @classmethod
     def _normalize_node(cls, node: Dict[str, Any]) -> Dict[str, Any]:
@@ -232,10 +324,8 @@ class StoryGenerator:
         if "nextnode" in node:
             node["nextNode"] = node.pop("nextnode")
 
-
         node.setdefault("isEnding", False)
         node.setdefault("isWinningEnding", False)
-
 
         if node["isEnding"]:
             node.pop("options", None)
@@ -254,25 +344,39 @@ class StoryGenerator:
                         cleaned.append({"text": text_val, "nextNode": cls._normalize_node(nxt)})
                 node["options"] = cleaned
 
-
         return node
 
-
-    # ---------- Persistence ----------
-
+    # ---------- Persistence (Modified to halt recursive image generation) ----------
 
     @classmethod
-    def _process_story_node(cls, db: Session, story_id: int, node_data: StoryNodeLLM, is_root: bool = False) -> StoryNode:
+    def _process_story_node(cls, db: Session, story_id: int, node_data: StoryNodeLLM, is_root: bool = False, generate_images: bool = False, user_id: Optional[int] = None) -> StoryNode:
         content = node_data.content if hasattr(node_data, "content") else node_data["content"]
         is_ending = node_data.isEnding if hasattr(node_data, "isEnding") else node_data["isEnding"]
         is_winning_ending = (
             node_data.isWinningEnding if hasattr(node_data, "isWinningEnding") else node_data["isWinningEnding"]
         )
-
+        
+        # --- Extract text prompts from the LLM response (Assumes Pydantic Model was updated) ---
+        image_prompt_1 = getattr(node_data, "image_prompt_1", None)
+        image_prompt_2 = getattr(node_data, "image_prompt_2", None)
+        
+        # --- Image Generation & URL Assignment ---
+        final_url_1 = image_prompt_1
+        final_url_2 = image_prompt_2
+        
+        if generate_images:
+            # Pass user_id and image number to the generator
+            final_url_1 = cls._generate_image_url(image_prompt_1, user_id, story_id, 1)
+            final_url_2 = cls._generate_image_url(image_prompt_2, user_id, story_id, 2)
+        # ---------------------------------------------
 
         node = StoryNode(
             story_id=story_id,
             content=content,
+            # --- Save the resulting URL/Path to DB ---
+            image_prompt_1=final_url_1, 
+            image_prompt_2=final_url_2, 
+            # ------------------------------------
             is_root=is_root,
             is_ending=is_ending,
             is_winning_ending=is_winning_ending,
@@ -280,7 +384,11 @@ class StoryGenerator:
         )
         db.add(node)
         db.flush()
-
+        
+        # --- DEBUG LOGGING ---
+        logger.info("Node %d: Saved Path 1 (Partial): %s", node.id, final_url_1[:50] if final_url_1 else 'None')
+        logger.info("Node %d: Saved Path 2 (Partial): %s", node.id, final_url_2[:50] if final_url_2 else 'None')
+        # -------------------------
 
         opts = getattr(node_data, "options", None)
         if not is_ending and opts:
@@ -289,10 +397,14 @@ class StoryGenerator:
                 next_n = opt.nextNode if hasattr(opt, "nextNode") else opt.get("nextNode")
                 if isinstance(next_n, dict):
                     next_n = StoryNodeLLM.model_validate(next_n)
-                child = cls._process_story_node(db, story_id, next_n, is_root=False)
+                
+                # --- CRITICAL FIX: Pass generate_images=False to stop recursive image generation ---
+                # Also pass user_id so it propagates to children for future use (if needed)
+                child = cls._process_story_node(db, story_id, next_n, is_root=False, generate_images=False, user_id=user_id)
+                # --- END FIX ---
+                
                 options_list.append({"text": opt.text if hasattr(opt, "text") else opt.get("text"), "node_id": child.id})
             node.options = options_list
-
 
         db.flush()
         return node

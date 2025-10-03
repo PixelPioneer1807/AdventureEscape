@@ -8,6 +8,8 @@ class StoryOptionLLM(BaseModel):
     
 class StoryNodeLLM(BaseModel):
     content: str = Field(description="The main content of the story node")
+    image_prompt_1: str = Field(description="A detailed, visually descriptive prompt (maximum 20 words) for the scene's first image.")
+    image_prompt_2: str = Field(description="A detailed, visually descriptive prompt (maximum 20 words) for the scene's second image. Must be distinctly different from image_prompt_1.")
     isEnding: bool = Field(description="Whether this node is an ending node")
     isWinningEnding: bool = Field(description="Whether this node is a winning ending node")
     options: Optional[List[StoryOptionLLM]] = Field(default=None, description="The options for this node")

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from routers import story, job
@@ -49,6 +50,11 @@ app.include_router(job.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(saves.router, prefix=settings.API_PREFIX)
 app.include_router(analytics_router, prefix=settings.API_PREFIX)
+
+# --- CRITICAL: Static Files Route to serve images to the frontend ---
+# This mounts /static/ to serve from generated_images directory
+app.mount("/static", StaticFiles(directory="generated_images"), name="static")
+# --- END STATIC MOUNT ---
 
 if __name__ == "__main__":
     import uvicorn
